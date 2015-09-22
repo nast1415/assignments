@@ -8,11 +8,12 @@ import java.nio.ByteBuffer;
 public class StringSetImpl implements StreamSerializable, StringSet {
 
     final private static int MAX_N = 239017;
+    final private static int MAX_NUMBER_OF_LETTERS = 60;
+    final private static int SIZE_OF_ALPHABET = 26;
 
     Node[] arrayOfNodes = new Node[MAX_N]; // Create array of nodes
     Node root = new Node(); // Create a root
     int lastIndex = 0;
-    private String prefix;
 
     StringSetImpl() {
         arrayOfNodes[0] = root;  // Add root as a 0-th element of this array
@@ -20,12 +21,12 @@ public class StringSetImpl implements StreamSerializable, StringSet {
     }
 
     public class Node {
-        int[] transits = new int[60]; // Array of transitions on letters
+        int[] transits = new int[MAX_NUMBER_OF_LETTERS]; // Array of transitions on letters
         private boolean isTerminal;
         int numberOfTerminal;
 
         Node() { // Node constructor
-            for (int i = 0; i < 60; i++) {
+            for (int i = 0; i < MAX_NUMBER_OF_LETTERS; i++) {
                 transits[i] = 0;
             } // 0 shows us that there is no transition on the letter i
             setIsTerminal(false);
@@ -42,27 +43,27 @@ public class StringSetImpl implements StreamSerializable, StringSet {
     }
 
     public int setElementNumber(int value) {
-        int letterNumber;
+        int transitPass;
         if (value <= 'z' && value >= 'a') {
-            letterNumber = value - 'a' + 26;
+            transitPass = value - 'a' + SIZE_OF_ALPHABET;
         } else {
-            letterNumber = value - 'A';
+            transitPass = value - 'A';
         }
-        return letterNumber;
+        return transitPass;
     }
 
     public boolean add(String element) {
         Node v = root;
         boolean isContains;
-        int letterNumber;
+        int transitPass;
         int value;
 
         for (int i = 0; i < element.length(); i++) {
             value = setElementNumber(element.charAt(i));
-            letterNumber = v.transits[value];
+            transitPass = v.transits[value];
 
-            if (letterNumber != 0) {
-                v = arrayOfNodes[letterNumber];
+            if (transitPass != 0) {
+                v = arrayOfNodes[transitPass];
             } else {
                 v.transits[value] = lastIndex;
                 v = new Node();
@@ -77,28 +78,32 @@ public class StringSetImpl implements StreamSerializable, StringSet {
             v.numberOfTerminal++;
             for (int i = 0; i < element.length(); i++) {
                 value = setElementNumber(element.charAt(i));
-                letterNumber = v.transits[value];
-                v = arrayOfNodes[letterNumber];
+                transitPass = v.transits[value];
+                v = arrayOfNodes[transitPass];
                 v.numberOfTerminal++;
             }
         }
         return !isContains;
     }
 
-    public boolean contains(String element) {
+    public Node getVertice(String element) {
         Node v = root;
-
         for (int i = 0; i < element.length(); i++) {
             int value = setElementNumber(element.charAt(i));
-            int letterNumber = v.transits[value];
+            int transitPass = v.transits[value];
 
-            if (letterNumber != 0) {
-                v = arrayOfNodes[letterNumber];
+            if (transitPass != 0) {
+                v = arrayOfNodes[transitPass];
             } else {
-                return false;
+                return null;
             }
         }
-        return v.isTerminal;
+        return v;
+    }
+
+    public boolean contains(String element) {
+        Node v = getVertice(element);
+        return v != null && v.isTerminal;
     }
 
     public boolean remove(String element) {
@@ -109,8 +114,8 @@ public class StringSetImpl implements StreamSerializable, StringSet {
         } else {
             for (int i = 0; i < element.length(); i++) {
                 int value = setElementNumber(element.charAt(i));
-                int letterNumber = v.transits[value];
-                v = arrayOfNodes[letterNumber];
+                int transitPass = v.transits[value];
+                v = arrayOfNodes[transitPass];
                 v.numberOfTerminal--;
             }
 
@@ -128,17 +133,10 @@ public class StringSetImpl implements StreamSerializable, StringSet {
     }
 
     public int howManyStartsWithPrefix(String prefix) {
-        Node v = root;
 
-        for (int i = 0; i < prefix.length(); i++) {
-            int value = setElementNumber(prefix.charAt(i));
-            int letterNumber = v.transits[value];
-
-            if (letterNumber != 0) {
-                v = arrayOfNodes[letterNumber];
-            } else {
-                return 0;
-            }
+        Node v = getVertice(prefix);
+        if (v == null) {
+            return 0;
         }
         return v.numberOfTerminal;
     }
@@ -162,7 +160,7 @@ public class StringSetImpl implements StreamSerializable, StringSet {
             printInt(out, lastIndex); // ArraySize
             for (int i = 0; i < lastIndex; i++) {
                 Node v = arrayOfNodes[i];
-                for (int j = 0; j < 60; j++) {
+                for (int j = 0; j < MAX_NUMBER_OF_LETTERS; j++) {
                     printInt(out, v.transits[j]);
                 } // Write transits array of v
                 printInt(out, v.numberOfTerminal); // Write number of terminal vertices in the v-tree
@@ -186,7 +184,7 @@ public class StringSetImpl implements StreamSerializable, StringSet {
             int arraySize = readInt(in); // Read array size
             for (int i = 0; i < arraySize; i++) {
                 Node v = new Node();
-                for (int j = 0; j < 60; j++) {
+                for (int j = 0; j < MAX_NUMBER_OF_LETTERS; j++) {
                     v.transits[j] = readInt(in);
                 }
                 v.numberOfTerminal = readInt(in);
