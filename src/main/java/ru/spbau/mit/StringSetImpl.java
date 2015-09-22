@@ -15,7 +15,7 @@ public class StringSetImpl implements StreamSerializable, StringSet {
     Node root = new Node(); // Create a root
     int lastIndex = 0;
 
-    StringSetImpl() {
+    public StringSetImpl() {
         arrayOfNodes[0] = root;  // Add root as a 0-th element of this array
         lastIndex++;
     }
