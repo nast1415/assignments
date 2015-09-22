@@ -3,6 +3,7 @@ package ru.spbau.mit;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 public class StringSetImpl implements StreamSerializable, StringSet {
 
@@ -142,19 +143,33 @@ public class StringSetImpl implements StreamSerializable, StringSet {
         return v.numberOfTerminal;
     }
 
+    private int readInt(InputStream in) throws IOException, SerializationException {
+        byte [] value;
+        value = new byte[4];
+        int number = in.read(value, 0, 4);
+        if (number != 4) {
+            throw new SerializationException();
+        }
+        return ByteBuffer.wrap(value).getInt();
+    }
+
+    private void printInt(OutputStream out, int element) throws IOException {
+        out.write(ByteBuffer.allocate(4).putInt(element).array());
+    }
+
     public void serialize(OutputStream out) throws SerializationException {
         try {
-            out.write(lastIndex); // ArraySize
+            printInt(out, lastIndex); // ArraySize
             for (int i = 0; i < lastIndex; i++) {
                 Node v = arrayOfNodes[i];
                 for (int j = 0; j < 60; j++) {
-                    out.write(v.transits[j]);
+                    printInt(out, v.transits[j]);
                 } // Write transits array of v
-                out.write(v.numberOfTerminal); // Write number of terminal vertices in the v-tree
+                printInt(out, v.numberOfTerminal); // Write number of terminal vertices in the v-tree
                 if (v.isTerminal()) {
-                    out.write(1);
+                    printInt(out, 1);
                 } else {
-                    out.write(0);
+                    printInt(out, 0);
                 }
             }
         } catch (IOException e) {
@@ -168,14 +183,14 @@ public class StringSetImpl implements StreamSerializable, StringSet {
         }
         lastIndex = 0;
         try {
-            int arraySize = in.read(); // Read array size
+            int arraySize = readInt(in); // Read array size
             for (int i = 0; i < arraySize; i++) {
                 Node v = new Node();
                 for (int j = 0; j < 60; j++) {
-                    v.transits[j] = in.read();
+                    v.transits[j] = readInt(in);
                 }
-                v.numberOfTerminal = in.read();
-                int isTerm = in.read();
+                v.numberOfTerminal = readInt(in);
+                int isTerm = readInt(in);
                 v.isTerminal = isTerm == 1;
                 arrayOfNodes[lastIndex] = v;
                 lastIndex++;
