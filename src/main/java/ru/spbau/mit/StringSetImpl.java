@@ -8,11 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class StringSetImpl implements StreamSerializable, StringSet {
-    final private static int MAX_NUMBER_OF_LETTERS = 60;
-    final private static int SIZE_OF_ALPHABET = 26;
-    final private static int NO_TRANSITION = 0;
+    private static final int MAX_NUMBER_OF_LETTERS = 60;
+    private static final int SIZE_OF_ALPHABET = 26;
+    private static final int NO_TRANSITION = 0;
 
-    List<Node> arrayOfNodes = new ArrayList<>(); // Create ArrayList of nodes
+    private List<Node> arrayOfNodes = new ArrayList<>(); // Create ArrayList of nodes
     private Node root = new Node(); // Create a root
     private int lastIndex = 1;
 
@@ -149,9 +149,9 @@ public class StringSetImpl implements StreamSerializable, StringSet {
         out.write(ByteBuffer.allocate(4).putInt(element).array());
     }
 
-        public void serialize(OutputStream out) throws SerializationException {
+    public void serialize(OutputStream out) throws SerializationException {
         try {
-            for (Node vertex: arrayOfNodes) {
+            for (Node vertex : arrayOfNodes) {
                 for (int j = 0; j < MAX_NUMBER_OF_LETTERS; j++) {
                     printInt(out, vertex.transits[j]);
                 } // Write transits array of vertex
@@ -172,8 +172,7 @@ public class StringSetImpl implements StreamSerializable, StringSet {
         lastIndex = 0;
         int i;
         try {
-            //int arraySize = readInt(in); // Read array size
-            while (in.available() != 0){
+            while (in.available() != 0) {
                 Node vertex = new Node();
                 for (int j = 0; j < MAX_NUMBER_OF_LETTERS; j++) {
                     vertex.transits[j] = readInt(in);
