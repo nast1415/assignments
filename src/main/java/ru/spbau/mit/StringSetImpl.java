@@ -10,25 +10,26 @@ public class StringSetImpl implements StreamSerializable, StringSet {
     final private static int MAX_N = 239017;
     final private static int MAX_NUMBER_OF_LETTERS = 60;
     final private static int SIZE_OF_ALPHABET = 26;
+    final private static int NO_TRANSITION = 0;
 
-    Node[] arrayOfNodes = new Node[MAX_N]; // Create array of nodes
-    Node root = new Node(); // Create a root
-    int lastIndex = 0;
+    private Node[] arrayOfNodes = new Node[MAX_N]; // Create array of nodes
+    private Node root = new Node(); // Create a root
+    private int lastIndex = 0;
 
     public StringSetImpl() {
-        arrayOfNodes[0] = root;  // Add root as a 0-th element of this array
+        arrayOfNodes[0] = root;
         lastIndex++;
     }
 
-    public class Node {
-        int[] transits = new int[MAX_NUMBER_OF_LETTERS]; // Array of transitions on letters
+    public static class Node {
+        private int[] transits = new int[MAX_NUMBER_OF_LETTERS]; // Array of transitions on letters
         private boolean isTerminal;
-        int numberOfTerminal;
+        private int numberOfTerminal;
 
-        Node() { // Node constructor
+        private Node() { // Node constructor
             for (int i = 0; i < MAX_NUMBER_OF_LETTERS; i++) {
-                transits[i] = 0;
-            } // 0 shows us that there is no transition on the letter i
+                transits[i] = NO_TRANSITION;
+            }
             setIsTerminal(false);
             numberOfTerminal = 0;
         }
@@ -42,7 +43,7 @@ public class StringSetImpl implements StreamSerializable, StringSet {
         }
     }
 
-    public int setElementNumber(int value) {
+    public int getElementNumber(int value) {
         int transitPass;
         if (value <= 'z' && value >= 'a') {
             transitPass = value - 'a' + SIZE_OF_ALPHABET;
@@ -53,76 +54,71 @@ public class StringSetImpl implements StreamSerializable, StringSet {
     }
 
     public boolean add(String element) {
-        Node v = root;
-        boolean isContains;
+        Node vertex = root;
         int transitPass;
         int value;
 
-        for (int i = 0; i < element.length(); i++) {
-            value = setElementNumber(element.charAt(i));
-            transitPass = v.transits[value];
+        if (contains(element))
+            return false;
+        else {
+            vertex.numberOfTerminal++;
+            for (char c : element.toCharArray()) {
+                value = getElementNumber(c);
+                transitPass = vertex.transits[value];
 
-            if (transitPass != 0) {
-                v = arrayOfNodes[transitPass];
-            } else {
-                v.transits[value] = lastIndex;
-                v = new Node();
-                arrayOfNodes[lastIndex] = v;
-                lastIndex++;
+                if (transitPass != NO_TRANSITION) {
+                    vertex = arrayOfNodes[transitPass];
+                    vertex.numberOfTerminal++;
+                } else {
+                    vertex.transits[value] = lastIndex;
+                    vertex = new Node();
+                    vertex.numberOfTerminal++;
+                    arrayOfNodes[lastIndex] = vertex;
+                    lastIndex++;
+                }
             }
         }
-        isContains = v.isTerminal();
-        v.isTerminal = true;
-        if (!isContains) {
-            v = root;
-            v.numberOfTerminal++;
-            for (int i = 0; i < element.length(); i++) {
-                value = setElementNumber(element.charAt(i));
-                transitPass = v.transits[value];
-                v = arrayOfNodes[transitPass];
-                v.numberOfTerminal++;
-            }
-        }
-        return !isContains;
+        vertex.setIsTerminal(true);
+        return true;
     }
 
-    public Node getVertice(String element) {
-        Node v = root;
+    public Node getVertex(String element) {
+        Node vertex = root;
         for (int i = 0; i < element.length(); i++) {
-            int value = setElementNumber(element.charAt(i));
-            int transitPass = v.transits[value];
+            int value = getElementNumber(element.charAt(i));
+            int transitPass = vertex.transits[value];
 
-            if (transitPass != 0) {
-                v = arrayOfNodes[transitPass];
+            if (transitPass != NO_TRANSITION) {
+                vertex = arrayOfNodes[transitPass];
             } else {
                 return null;
             }
         }
-        return v;
+        return vertex;
     }
 
     public boolean contains(String element) {
-        Node v = getVertice(element);
-        return v != null && v.isTerminal;
+        Node vertex = getVertex(element);
+        return vertex != null && vertex.isTerminal;
     }
 
     public boolean remove(String element) {
-        Node v = root;
+        Node vertex = root;
 
         if (!contains(element)) {
             return false;
         } else {
             for (int i = 0; i < element.length(); i++) {
-                int value = setElementNumber(element.charAt(i));
-                int transitPass = v.transits[value];
-                v = arrayOfNodes[transitPass];
-                v.numberOfTerminal--;
+                int value = getElementNumber(element.charAt(i));
+                int transitPass = vertex.transits[value];
+                vertex = arrayOfNodes[transitPass];
+                vertex.numberOfTerminal--;
             }
 
-            v.isTerminal = false;
+            vertex.setIsTerminal(false);
 
-            v = root;
-            v.numberOfTerminal--;
+            vertex = root;
+            vertex.numberOfTerminal--;
 
         }
         return true;
@@ -134,11 +130,11 @@ public class StringSetImpl implements StreamSerializable, StringSet {
 
     public int howManyStartsWithPrefix(String prefix) {
 
-        Node v = getVertice(prefix);
-        if (v == null) {
+        Node vertex = getVertex(prefix);
+        if (vertex == null) {
             return 0;
         }
-        return v.numberOfTerminal;
+        return vertex.numberOfTerminal;
     }
 
     private int readInt(InputStream in) throws IOException, SerializationException {
@@ -159,12 +155,12 @@ public class StringSetImpl implements StreamSerializable, StringSet {
         try {
             printInt(out, lastIndex); // ArraySize
             for (int i = 0; i < lastIndex; i++) {
-                Node v = arrayOfNodes[i];
+                Node vertex = arrayOfNodes[i];
                 for (int j = 0; j < MAX_NUMBER_OF_LETTERS; j++) {
-                    printInt(out, v.transits[j]);
-                } // Write transits array of v
-                printInt(out, v.numberOfTerminal); // Write number of terminal vertices in the v-tree
-                if (v.isTerminal()) {
+                    printInt(out, vertex.transits[j]);
+                } // Write transits array of vertex
+                printInt(out, vertex.numberOfTerminal); // Write number of terminal vertices in the vertex-tree
+                if (vertex.isTerminal()) {
                     printInt(out, 1);
                 } else {
                     printInt(out, 0);
@@ -183,14 +179,14 @@ public class StringSetImpl implements StreamSerializable, StringSet {
         try {
             int arraySize = readInt(in); // Read array size
             for (int i = 0; i < arraySize; i++) {
-                Node v = new Node();
+                Node vertex = new Node();
                 for (int j = 0; j < MAX_NUMBER_OF_LETTERS; j++) {
-                    v.transits[j] = readInt(in);
+                    vertex.transits[j] = readInt(in);
                 }
-                v.numberOfTerminal = readInt(in);
+                vertex.numberOfTerminal = readInt(in);
                 int isTerm = readInt(in);
-                v.isTerminal = isTerm == 1;
-                arrayOfNodes[lastIndex] = v;
+                vertex.isTerminal = isTerm == 1;
+                arrayOfNodes[lastIndex] = vertex;
                 lastIndex++;
             }
             root = arrayOfNodes[0];
