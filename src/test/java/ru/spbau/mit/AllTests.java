@@ -110,6 +110,7 @@ public class AllTests {
         }
     };
 
+
     private static final Predicate<Integer> isEven = new Predicate<Integer>() {
         @Override
         boolean apply(Integer arg) {
