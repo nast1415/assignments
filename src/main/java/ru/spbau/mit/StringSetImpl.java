@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 public class StringSetImpl implements StreamSerializable, StringSet {
 
@@ -12,12 +13,12 @@ public class StringSetImpl implements StreamSerializable, StringSet {
     final private static int SIZE_OF_ALPHABET = 26;
     final private static int NO_TRANSITION = 0;
 
-    private Node[] arrayOfNodes = new Node[MAX_N]; // Create array of nodes
+    ArrayList<Node> arrayOfNodes = new ArrayList<>(); // Create ArrayList of nodes
     private Node root = new Node(); // Create a root
     private int lastIndex = 0;
 
     public StringSetImpl() {
-        arrayOfNodes[0] = root;
+        arrayOfNodes.add(root);
         lastIndex++;
     }
 
@@ -26,7 +27,7 @@ public class StringSetImpl implements StreamSerializable, StringSet {
         private boolean isTerminal;
         private int numberOfTerminal;
 
-        private Node() { // Node constructor
+        public Node() { // Node constructor
             for (int i = 0; i < MAX_NUMBER_OF_LETTERS; i++) {
                 transits[i] = NO_TRANSITION;
             }
@@ -67,13 +68,13 @@ public class StringSetImpl implements StreamSerializable, StringSet {
                 transitPass = vertex.transits[value];
 
                 if (transitPass != NO_TRANSITION) {
-                    vertex = arrayOfNodes[transitPass];
+                    vertex = arrayOfNodes.get(transitPass);
                     vertex.numberOfTerminal++;
                 } else {
                     vertex.transits[value] = lastIndex;
                     vertex = new Node();
                     vertex.numberOfTerminal++;
-                    arrayOfNodes[lastIndex] = vertex;
+                    arrayOfNodes.add(vertex);
                     lastIndex++;
                 }
             }
@@ -84,12 +85,12 @@ public class StringSetImpl implements StreamSerializable, StringSet {
 
     public Node getVertex(String element) {
         Node vertex = root;
-        for (int i = 0; i < element.length(); i++) {
-            int value = getElementNumber(element.charAt(i));
+        for (char c : element.toCharArray()) {
+            int value = getElementNumber(c);
             int transitPass = vertex.transits[value];
 
             if (transitPass != NO_TRANSITION) {
-                vertex = arrayOfNodes[transitPass];
+                vertex = arrayOfNodes.get(transitPass);
             } else {
                 return null;
             }
@@ -108,10 +109,10 @@ public class StringSetImpl implements StreamSerializable, StringSet {
         if (!contains(element)) {
             return false;
         } else {
-            for (int i = 0; i < element.length(); i++) {
-                int value = getElementNumber(element.charAt(i));
+            for (char c : element.toCharArray()) {
+                int value = getElementNumber(c);
                 int transitPass = vertex.transits[value];
-                vertex = arrayOfNodes[transitPass];
+                vertex = arrayOfNodes.get(transitPass);
                 vertex.numberOfTerminal--;
             }
 
@@ -155,7 +156,7 @@ public class StringSetImpl implements StreamSerializable, StringSet {
         try {
             printInt(out, lastIndex); // ArraySize
             for (int i = 0; i < lastIndex; i++) {
-                Node vertex = arrayOfNodes[i];
+                Node vertex = arrayOfNodes.get(i);
                 for (int j = 0; j < MAX_NUMBER_OF_LETTERS; j++) {
                     printInt(out, vertex.transits[j]);
                 } // Write transits array of vertex
@@ -172,9 +173,7 @@ public class StringSetImpl implements StreamSerializable, StringSet {
     }
 
     public void deserialize(InputStream in) throws SerializationException {
-        for (int i = 0; i < lastIndex; i++) {
-            arrayOfNodes[i] = null;
-        }
+        arrayOfNodes.clear();
         lastIndex = 0;
         try {
             int arraySize = readInt(in); // Read array size
@@ -186,10 +185,10 @@ public class StringSetImpl implements StreamSerializable, StringSet {
                 vertex.numberOfTerminal = readInt(in);
                 int isTerm = readInt(in);
                 vertex.isTerminal = isTerm == 1;
-                arrayOfNodes[lastIndex] = vertex;
+                arrayOfNodes.add(vertex);
                 lastIndex++;
             }
-            root = arrayOfNodes[0];
+            root = arrayOfNodes.get(0);
 
         } catch (IOException e) {
             throw new SerializationException();
