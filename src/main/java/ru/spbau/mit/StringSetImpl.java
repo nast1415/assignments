@@ -5,21 +5,19 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.List;
 
 public class StringSetImpl implements StreamSerializable, StringSet {
-
-    final private static int MAX_N = 239017;
     final private static int MAX_NUMBER_OF_LETTERS = 60;
     final private static int SIZE_OF_ALPHABET = 26;
     final private static int NO_TRANSITION = 0;
 
-    ArrayList<Node> arrayOfNodes = new ArrayList<>(); // Create ArrayList of nodes
+    List<Node> arrayOfNodes = new ArrayList<>(); // Create ArrayList of nodes
     private Node root = new Node(); // Create a root
-    private int lastIndex = 0;
+    private int lastIndex = 1;
 
     public StringSetImpl() {
         arrayOfNodes.add(root);
-        lastIndex++;
     }
 
     public static class Node {
@@ -39,7 +37,7 @@ public class StringSetImpl implements StreamSerializable, StringSet {
             return isTerminal;
         }
 
-        public void setIsTerminal(boolean isTerminal) {
+        private void setIsTerminal(boolean isTerminal) {
             this.isTerminal = isTerminal;
         }
     }
@@ -69,14 +67,13 @@ public class StringSetImpl implements StreamSerializable, StringSet {
 
                 if (transitPass != NO_TRANSITION) {
                     vertex = arrayOfNodes.get(transitPass);
-                    vertex.numberOfTerminal++;
                 } else {
                     vertex.transits[value] = lastIndex;
                     vertex = new Node();
-                    vertex.numberOfTerminal++;
                     arrayOfNodes.add(vertex);
                     lastIndex++;
                 }
+                vertex.numberOfTerminal++;
             }
         }
         vertex.setIsTerminal(true);
@@ -139,7 +136,7 @@ public class StringSetImpl implements StreamSerializable, StringSet {
     }
 
     private int readInt(InputStream in) throws IOException, SerializationException {
-        byte [] value;
+        byte[] value;
         value = new byte[4];
         int number = in.read(value, 0, 4);
         if (number != 4) {
@@ -152,11 +149,9 @@ public class StringSetImpl implements StreamSerializable, StringSet {
         out.write(ByteBuffer.allocate(4).putInt(element).array());
     }
 
-    public void serialize(OutputStream out) throws SerializationException {
+        public void serialize(OutputStream out) throws SerializationException {
         try {
-            printInt(out, lastIndex); // ArraySize
-            for (int i = 0; i < lastIndex; i++) {
-                Node vertex = arrayOfNodes.get(i);
+            for (Node vertex: arrayOfNodes) {
                 for (int j = 0; j < MAX_NUMBER_OF_LETTERS; j++) {
                     printInt(out, vertex.transits[j]);
                 } // Write transits array of vertex
@@ -175,9 +170,10 @@ public class StringSetImpl implements StreamSerializable, StringSet {
     public void deserialize(InputStream in) throws SerializationException {
         arrayOfNodes.clear();
         lastIndex = 0;
+        int i;
         try {
-            int arraySize = readInt(in); // Read array size
-            for (int i = 0; i < arraySize; i++) {
+            //int arraySize = readInt(in); // Read array size
+            while (in.available() != 0){
                 Node vertex = new Node();
                 for (int j = 0; j < MAX_NUMBER_OF_LETTERS; j++) {
                     vertex.transits[j] = readInt(in);
