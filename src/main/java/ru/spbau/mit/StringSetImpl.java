@@ -57,8 +57,9 @@ public class StringSetImpl implements StreamSerializable, StringSet {
         int transitPass;
         int value;
 
-        if (contains(element))
+        if (contains(element)) {
             return false;
+        }
         else {
             vertex.numberOfTerminal++;
             for (char c : element.toCharArray()) {
