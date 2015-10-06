@@ -3,7 +3,7 @@ package ru.spbau.mit;
 import java.util.*;
 
 public class Collections {
-    public static <T, R> Iterable<R> map(final Function1<? super T, R> outer, final Iterable<T> collection) {
+    public static <T, R> Iterable<R> map(final Function1<? super T, ? extends R> outer, final Iterable<T> collection) {
         List<R> resultCollection = new ArrayList<>();
         for (T element : collection) {
             resultCollection.add(outer.apply(element));
@@ -36,24 +36,27 @@ public class Collections {
         return takeWhile(predicate.not(), collection);
     }
 
-    public static <T, R> R foldl(final Function2<? super R, ? super T, R> outer, R value, final Iterable<T> collection) {
+    public static <T, R> R foldl(final Function2<? super R, ? super T, ? extends R> outer, R value, final Iterable<T> collection) {
         for (T element : collection) {
             value = outer.apply(value, element);
         }
         return value;
     }
 
+    public static <T, R> R foldr(final Function2<? super T, ? super R, ? extends R> outer, R value, final Iterable<T> collection) {
+        List<T> collectionList = new ArrayList<>();
 
-    public static <T, R> R foldr(final Function2<? super T, ? super R, R> outer, R value, final Iterator<T> it) {
-        if (!it.hasNext())
-            return value;
-        T element = it.next();
-        return outer.apply(element, foldr(outer, value, it));
-    }
+        for (T element : collection) {
+            collectionList.add(element);
+        }
+        R result = value;
 
-    public static <T, R> R foldr(final Function2<? super T, ? super R, R> outer, R value, final Iterable<T> collection) {
-        Iterator<T> it = collection.iterator();
-        return foldr(outer, value, it);
+        java.util.Collections.reverse(collectionList);
+
+        for (T element : collectionList) {
+            result = outer.apply(element, result);
+        }
+        return result;
     }
 
 }

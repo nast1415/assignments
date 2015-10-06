@@ -5,9 +5,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class AllTests {
 
@@ -97,6 +95,25 @@ public class AllTests {
 
         assertFalse(lessThan239.and(greaterThan55).not().apply(60));
         assertTrue(lessThan239.and(greaterThan55).not().apply(50));
+
+    }
+
+    //LazyTests for or, and
+
+    private static Predicate<Integer> failedIfTrue = new Predicate<Integer>() {
+        @Override
+        boolean apply(Integer arg) {
+            if (arg == 1) {
+                fail();
+            }
+            return true;
+        }
+    };
+
+    @Test
+    public void testLazyOrAnd() {
+        assertFalse(Predicate.ALWAYS_FALSE.and(failedIfTrue).apply(1));
+        assertTrue(Predicate.ALWAYS_TRUE.or(failedIfTrue).apply(1));
     }
 
     // Tests for Collections

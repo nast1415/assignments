@@ -6,14 +6,14 @@ import java.util.Objects;
 abstract public class Predicate<T> {
     abstract boolean apply(T arg);
 
-    public static final Predicate ALWAYS_TRUE = new Predicate() {
+    public static final Predicate<Object> ALWAYS_TRUE = new Predicate<Object>() {
         @Override
         public boolean apply(Object arg) {
             return true;
         }
     };
 
-    public static final Predicate ALWAYS_FALSE = new Predicate() {
+    public static final Predicate<Object> ALWAYS_FALSE = new Predicate<Object>() {
 
         @Override
         boolean apply(Object arg) {
@@ -21,23 +21,23 @@ abstract public class Predicate<T> {
         }
     };
 
-    public Predicate<T> or (final Predicate<? super T> outer) {
+    public <T1 extends T> Predicate<T1> or (final Predicate<? super T1> outer) {
         final Predicate<T> inner = this;
 
-        return  new Predicate<T>() {
+        return  new Predicate<T1>() {
             @Override
-            boolean apply(T arg) {
+            boolean apply(T1 arg) {
                 return (inner.apply(arg) || outer.apply(arg));
             }
         };
     }
 
-    public Predicate<T> and (final Predicate<? super T> outer) {
+    public <T1 extends T> Predicate<T1> and (final Predicate<? super T1> outer) {
         final Predicate<T> inner = this;
 
-        return  new Predicate<T>() {
+        return  new Predicate<T1>() {
             @Override
-            boolean apply(T arg) {
+            boolean apply(T1 arg) {
                 return (inner.apply(arg) && outer.apply(arg));
             }
         };
