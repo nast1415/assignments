@@ -29,7 +29,7 @@ public class GameServerImpl implements GameServer {
             plugin.onPlayerConnected(playerId);
             while (!currentConnection.isClosed()) {
                 try {
-                    synchronized (currentConnection) {
+                    synchronized (activeConnections) {
                         if (!currentConnection.isClosed()) {
                             String message = currentConnection.receive(timeout);
                             if (message != null) {
