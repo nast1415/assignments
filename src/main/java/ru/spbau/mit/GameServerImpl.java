@@ -3,12 +3,13 @@ package ru.spbau.mit;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 
 public class GameServerImpl implements GameServer {
     private int lastId = 0;
     private final Game plugin;
-    private final Map<String, Connection> activeConnections = new HashMap<>();
+    private final Map<String, GameServerRunnable> activeConnections = new HashMap<>();
 
     private String getSetterName(String setterName) {
         return "set" + setterName.toUpperCase().charAt(0) + setterName.substring(1);
@@ -18,6 +19,8 @@ public class GameServerImpl implements GameServer {
         private final String playerId;
         private final Connection currentConnection;
         private final int timeout = 1000;
+        public Queue<String> messages = new ConcurrentLinkedDeque<>();
+        //public Set<String> messages = new HashSet<>();
 
         public GameServerRunnable(String playerId, Connection currentConnection) {
             this.playerId = playerId;
@@ -35,7 +38,13 @@ public class GameServerImpl implements GameServer {
                             if (message != null) {
                                 plugin.onPlayerSentMsg(playerId, message);
                             }
+
+                            if (!messages.isEmpty()) {
+                                String currentMessage = messages.poll();
+                                currentConnection.send(currentMessage);
+                            }
                         }
+
                     }
                 } catch (Exception e) {
                     break;
@@ -65,11 +74,12 @@ public class GameServerImpl implements GameServer {
 
     @Override
     public void accept(final Connection connection) {
+        GameServerRunnable runnable = new GameServerRunnable(String.valueOf(lastId), connection);
         synchronized (activeConnections) {
-            activeConnections.put(String.valueOf(lastId), connection);
+            activeConnections.put(String.valueOf(lastId), runnable);
         }
         connection.send(String.valueOf(lastId));
-        Thread connectionThread = new Thread(new GameServerRunnable(String.valueOf(lastId), connection));
+        Thread connectionThread = new Thread(runnable);
         connectionThread.start();
         ++lastId;
     }
@@ -77,8 +87,10 @@ public class GameServerImpl implements GameServer {
     @Override
     public void broadcast(String message) {
         synchronized (activeConnections) {
-            for (Connection connection : activeConnections.values()) {
-                connection.send(message);
+            for (GameServerRunnable el : activeConnections.values()) {
+                synchronized (el.messages) {
+                    el.messages.add(message);
+                }
             }
         }
     }
@@ -86,7 +98,10 @@ public class GameServerImpl implements GameServer {
     @Override
     public void sendTo(String id, String message) {
         synchronized (activeConnections) {
-            activeConnections.get(id).send(message);
+            GameServerRunnable task = activeConnections.get(id);
+            synchronized (task.messages) {
+                task.messages.add(message);
+            }
         }
     }
 }
