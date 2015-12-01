@@ -19,8 +19,7 @@ public class GameServerImpl implements GameServer {
         private final String playerId;
         private final Connection currentConnection;
         private final int timeout = 1000;
-        public Queue<String> messages = new ConcurrentLinkedDeque<>();
-        //public Set<String> messages = new HashSet<>();
+        public final Queue<String> messages = new ConcurrentLinkedDeque<>();
 
         public GameServerRunnable(String playerId, Connection currentConnection) {
             this.playerId = playerId;
