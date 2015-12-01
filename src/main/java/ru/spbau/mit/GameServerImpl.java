@@ -7,7 +7,7 @@ import java.util.*;
 
 public class GameServerImpl implements GameServer {
     private int lastId = 0;
-    private Game plugin;
+    private final Game plugin;
     private final Map<String, Connection> activeConnections = new HashMap<>();
 
     private String getSetterName(String setterName) {
@@ -37,10 +37,11 @@ public class GameServerImpl implements GameServer {
                             }
                         }
                     }
-                } catch (InterruptedException e) {
+                } catch (Exception e) {
                     break;
                 }
             }
+            activeConnections.remove(playerId);
 
         }
     }
@@ -59,9 +60,6 @@ public class GameServerImpl implements GameServer {
                 Method setter = Class.forName(gameClassName).getMethod(setterName, String.class);
                 setter.invoke(plugin, connectionValue);
             }
-        }
-        if (!(plugin instanceof Game)) {
-            throw new IllegalArgumentException("Wrong plugin " + gameClassName);
         }
     }
 

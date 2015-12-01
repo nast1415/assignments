@@ -7,10 +7,10 @@ import java.util.concurrent.TimeUnit;
 
 public class QuizGame implements Game {
     private GameServer server;
-    Thread gameThread;
 
-    private Integer delayUntilNextLetter = 0;
-    private Integer maxLettersToOpen = 0;
+    private int delayUntilNextLetter = 0;
+    private int maxLettersToOpen = 0;
+    private int currentNumberOfLetters = 0;
 
     private List<String> questions = new ArrayList<>();
     private int currentQuestionIndex = -1;
@@ -18,8 +18,9 @@ public class QuizGame implements Game {
     private List<String> answers = new ArrayList<>();
 
     private boolean isRunning = false;
-    private boolean isStarted = false;
-    private boolean isNewRoundStarted = false;
+
+    private Timer timer = new Timer();
+    boolean isThisFirstRound = true;
 
     public void setDelayUntilNextLetter(Integer delayUntilNextLetter) {
         this.delayUntilNextLetter = delayUntilNextLetter;
@@ -29,7 +30,7 @@ public class QuizGame implements Game {
         this.maxLettersToOpen = maxLettersToOpen;
     }
 
-    public void setDictionaryFilename(String dictionaryFilename) {
+    public void setDictionaryFilename(String dictionaryFilename) throws Exception {
         try {
             Scanner dictionary = new Scanner(new File(dictionaryFilename));
             while (dictionary.hasNextLine()) {
@@ -39,8 +40,7 @@ public class QuizGame implements Game {
             }
             dictionary.close();
         } catch (FileNotFoundException e) {
-            System.err.println("Wrong dictionary filename. Dictionary file not found.");
-            System.exit(1);
+            throw new Exception("Wrong dictionary filename. Dictionary file not found.", e);
         }
     }
 
@@ -52,46 +52,8 @@ public class QuizGame implements Game {
         return answers.get(currentQuestionIndex).length();
     }
 
-    private class QuizGameRunnable implements Runnable {
-
-        @Override
-        public void run() {
-            while (true) {
-                if (isRunning) {
-                    setNextQuestion();
-                    server.broadcast("New round started: " + questions.get(currentQuestionIndex) + " (" + getNumberOfLetters(currentQuestionIndex) + " letters)");
-                    isNewRoundStarted = false;
-
-                    for (int numberOfOpenedLetters = 0; numberOfOpenedLetters < maxLettersToOpen; numberOfOpenedLetters++) {
-                        try {
-                            TimeUnit.MILLISECONDS.sleep(delayUntilNextLetter);
-                        } catch (InterruptedException e) {
-                            isNewRoundStarted = true;
-                            break;
-                        }
-                        server.broadcast("Current prefix is " + answers.get(currentQuestionIndex).substring(0, numberOfOpenedLetters + 1));
-                    }
-
-                    if (isNewRoundStarted) {
-                        continue;
-                    }
-
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(delayUntilNextLetter);
-                    } catch (InterruptedException e) {
-                        isNewRoundStarted = true;
-                        continue;
-                    }
-
-                    server.broadcast("Nobody guessed, the word was " + answers.get(currentQuestionIndex));
-                }
-            }
-        }
-    }
-
     public QuizGame(GameServer server) {
         this.server = server;
-        gameThread = new Thread(new QuizGameRunnable());
     }
 
     @Override
@@ -99,33 +61,69 @@ public class QuizGame implements Game {
 
     }
 
+    private class MyTimerTask extends TimerTask {
+
+        @Override
+        public void run() {
+            if (currentNumberOfLetters == maxLettersToOpen) {
+                server.broadcast("Nobody guessed, the word was " + answers.get(currentQuestionIndex));
+                startRound();
+            } else {
+                currentNumberOfLetters++;
+                server.broadcast("Current prefix is " + answers.get(currentQuestionIndex).substring(0, currentNumberOfLetters));
+            }
+        }
+    }
+
+
+    private synchronized void startRound() {
+        setNextQuestion();
+        server.broadcast("New round started: " + questions.get(currentQuestionIndex) + " (" + getNumberOfLetters(currentQuestionIndex) + " letters)");
+        if (!isThisFirstRound) {
+            timer.cancel();
+        }
+
+        isThisFirstRound = false;
+        TimerTask task = new MyTimerTask();
+        timer = new Timer();
+        timer.schedule(task, delayUntilNextLetter, delayUntilNextLetter);
+    }
+
+    private synchronized void stopRound() {
+        if (!isThisFirstRound) {
+            timer.cancel();
+        }
+    }
+
     @Override
-    public void onPlayerSentMsg(String id, String msg) {
-        synchronized (this) {
-            switch (msg) {
-                case "!start":
+    public synchronized void onPlayerSentMsg(String id, String msg) {
+        switch (msg) {
+            case "!start":
+                if (!isRunning) {
                     isRunning = true;
-                    if (!isStarted) {
-                        isStarted = true;
-                        gameThread.start();
-                    }
-                    break;
+                    startRound();
+                }
+                break;
 
-                case "!stop":
+            case "!stop":
+                if (isRunning) {
                     isRunning = false;
-                    gameThread.interrupt();
+                    stopRound();
                     server.broadcast("Game has been stopped by " + id);
-                    break;
+                }
+                break;
 
-                default:
+            default:
+                if (isRunning) {
                     if (msg.equals(answers.get(currentQuestionIndex))) {
                         server.broadcast("The winner is " + id);
-                        gameThread.interrupt();
+                        stopRound();
+                        startRound();
                     } else {
                         server.sendTo(id, "Wrong try");
                     }
+                }
 
-            }
         }
     }
 }

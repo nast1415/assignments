@@ -10,5 +10,5 @@ public interface Game {
      * This method is called when new message is received from
      * a client with given id
      **/
-    void onPlayerSentMsg(String id, String msg);
+    void onPlayerSentMsg(String id, String msg) throws Exception;
 }

@@ -6,6 +6,7 @@ import java.util.*;
 public class SumTwoNumbersGame implements Game {
     private int firstGuessNumber, secondGuessNumber;
     private final GameServer server;
+    private final Random random = new Random();
 
     public SumTwoNumbersGame(GameServer server) {
         setNumbers();
@@ -13,7 +14,6 @@ public class SumTwoNumbersGame implements Game {
     }
 
     private void setNumbers() {
-        Random random = new Random();
         firstGuessNumber = random.nextInt(100);
         secondGuessNumber = random.nextInt(100);
     }
@@ -28,7 +28,7 @@ public class SumTwoNumbersGame implements Game {
     }
 
     @Override
-    public void onPlayerSentMsg(String id, String msg) {
+    public synchronized void onPlayerSentMsg(String id, String msg) throws Exception {
         try {
             int sum = Integer.parseInt(msg);
             if (sum == firstGuessNumber + secondGuessNumber) {
@@ -40,8 +40,7 @@ public class SumTwoNumbersGame implements Game {
                 server.sendTo(id, "Wrong");
             }
         } catch (NumberFormatException e) {
-            System.err.println("Your answer is not a number.");
-            System.exit(1);
+            throw new Exception("Your answer is not a number.", e);
         }
     }
 }

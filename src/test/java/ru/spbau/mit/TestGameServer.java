@@ -22,6 +22,8 @@ public class TestGameServer {
             server.accept(connection);
         }
 
+        Thread.sleep(1000);
+
         Set<String> ids = new HashSet<String>();
         for (TestConnection c: connections) {
             c.close();
@@ -43,7 +45,7 @@ public class TestGameServer {
         int size = 1 + random.nextInt(100);
         for (int i = 0; i < size; i++) {
             TestConnection connection =
-                new TestConnection(TestConnection.State.RECEIVED_MESSAGE);
+                    new TestConnection(TestConnection.State.RECEIVED_MESSAGE);
             connections.add(connection);
             server.accept(connection);
         }

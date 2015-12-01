@@ -75,6 +75,8 @@ public class TestSumTwoNumbersGame {
                 default:
                     break;
             }
+
+            notify();
         }
 
         @Override
@@ -112,7 +114,7 @@ public class TestSumTwoNumbersGame {
         }
 
         private static final Pattern TASK_REGEX =
-            Pattern.compile("(\\d+) (\\d+)");
+                Pattern.compile("(\\d+) (\\d+)");
 
         private State state = State.INITIALIZED;
         private String answer;
